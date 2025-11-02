@@ -1,8 +1,31 @@
 # Genetic algorithm for finding solution to N-Queens problem
 # Assumption that population size >= 3, and all population members are of equal size.
 # Heuristics will be so that higher values are worse.
+import os
 import random
 import sys
+
+
+def load_env_file(path=".env"):
+    """Load key=value pairs from a local .env file without external dependencies."""
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as env_file:
+        for raw_line in env_file:
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            key, sep, value = line.partition("=")
+            if sep:
+                os.environ.setdefault(key.strip(), value.strip())
+
+
+load_env_file()
+
+# Centralized configuration keeps defaults easy to audit and override via environment.
+DEFAULT_POPULATION_SIZE = int(os.getenv("DEFAULT_POPULATION_SIZE", 200))
+MAX_ITERATIONS = int(os.getenv("MAX_ITERATIONS", 200000))
+TOURNAMENT_SAMPLE_SIZE = 3
 
 # Produces next generation by crossing then mutating members chosen based on fitness.
 def getNextGeneration(population, fitnessFunction):
@@ -12,7 +35,7 @@ def getNextGeneration(population, fitnessFunction):
     # Keeps same population size
     for _ in range(P):
         # Assuming population >= 3
-        currentChoices = random.sample(population, 3) 
+        currentChoices = random.sample(population, TOURNAMENT_SAMPLE_SIZE) 
 
         # Sort the 3 chosen, and take the 2 most fit of them.
         # This is a fairly relaxed implementation of fitness selection. (I think)
@@ -104,8 +127,8 @@ if __name__ == '__main__':
         P = int(sys.argv[1])
         N = int(sys.argv[2])
     elif len(sys.argv) == 2:
-        # 200 is reasonable standard population size
-        P = 200
+        # Default population size keeps runs stable while remaining configurable.
+        P = DEFAULT_POPULATION_SIZE
         N = int(sys.argv[1])
     else:
         print("Please enter N, the number of queens to solve for.")
@@ -116,7 +139,7 @@ if __name__ == '__main__':
     #print(f"First generation is: {exampleFirstGen}")
     nextGen = exampleFirstGen
     fitnessFunction = NQueensCollisionFitness
-    for iteration in range(200000):
+    for iteration in range(MAX_ITERATIONS):
         nextGen = getNextGeneration(nextGen, fitnessFunction)
         for member in nextGen:
             if fitnessFunction(member) <= 0:
